@@ -12,15 +12,12 @@ from torch.utils.data import Dataset, DataLoader
 data = pd.read_csv('PoetryFoundationData.csv')
 data = data.dropna()
 
-data
 # Delete the first column
 data = data.drop(data.columns[0], axis=1)
 
 # in the titles, drop all '\n\n' occurrences
 data['Title'] = data['Title'].apply(lambda x: x.replace('\n\n', ''))
 
-
-data
 
 # check how many poems contain a ';' in the text
 data['Poem'].apply(lambda x: '<LINE>' in x).sum()
@@ -70,7 +67,12 @@ class DataProcessor(object):
     @staticmethod
     def preprocess_text(text):
         # Tokenize, remove punctuation and lowercase
-        tokens = nltk.word_tokenize(text)
+        try:
+            tokens = nltk.word_tokenize(text)
+        except TypeError as e:
+            print("Error in tokenizing text \"%s\": %s", text, str(e))
+            return ""
+
         tokens = [word.lower() for word in tokens if word.isalpha()]
 
         # Remove stopwords and lemmatize
@@ -94,19 +96,18 @@ def find_special_characters(text):
 
 # Load your data
 data = pd.read_csv('poems.csv')
+data.dropna(inplace=True)
 
 # Run function to find special characters for all instances in the data
 special_lists = data['Poem'].apply(lambda x: find_special_characters(x))
+data.dropna(inplace=True)
 
 # Combine all lists into one list and ensure all values are unique
 all_special_characters = set([char for sublist in special_lists for char in sublist])
 
 # Convert the set back to a list if needed
 unique_special_characters = list(all_special_characters)
-print(special_lists)
-# Print the results
-print(unique_special_characters)
-print(len(unique_special_characters))
+
 class Tokenizer(object):
     def __init__(self, max_length=0, special_characters=[]):
         super().__init__()
@@ -331,6 +332,7 @@ tokenizer = Tokenizer(max_length=1200, special_characters=unique_special_charact
 
 # randomly split the data into training, test and validation sets
 data = pd.read_csv('poems.csv')
+data.dropna(inplace=True)
 
 # shuffle the data
 data = data.sample(frac=1).reset_index(drop=True)
@@ -355,5 +357,3 @@ val_poems = dataprocessor.process_batch(val_data['Poem'])
 train_tokens = torch.from_numpy(tokenizer.encode(train_poems)).long()
 test_tokens = torch.from_numpy(tokenizer.encode(test_poems)).long()
 val_tokens = torch.from_numpy(tokenizer.encode(val_poems)).long()
-
-print(train_tokens)
